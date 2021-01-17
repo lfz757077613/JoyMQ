@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: joymq-broker
+
+# 自定义配置
+broker:
+  port: 6792

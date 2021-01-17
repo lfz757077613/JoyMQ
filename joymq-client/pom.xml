@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>cn.laifuzhi</groupId>
+        <artifactId>joymq</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>joymq-client</artifactId>
+
+    <properties>
+        <classesShadedDir>${project.build.directory}/classes-shaded</classesShadedDir>
+        <classesShadedNativeDir>${classesShadedDir}/META-INF/native</classesShadedNativeDir>
+        <shadingPrefix>joymqclientshade</shadingPrefix>
+        <jarName>${project.build.finalName}.${project.packaging}</jarName>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>cn.laifuzhi</groupId>
+            <artifactId>joymq-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
+                            <createSourcesJar>true</createSourcesJar>
+                            <shadeSourcesContent>true</shadeSourcesContent>
+                            <artifactSet>
+                                <includes>
+                                    <include>io.netty:netty-all</include>
+                                    <include>cn.laifuzhi:joymq-common</include>
+                                </includes>
+                            </artifactSet>
+                            <filters>
+                                <filter>
+                                    <artifact>io.netty:netty-all</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>cn.laifuzhi:joymq-common</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/MANIFEST.MF</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                            <relocations>
+                                <relocation>
+                                    <pattern>io.netty</pattern>
+                                    <shadedPattern>${shadingPrefix}.io.netty</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>cn.laifuzhi.joymq.common</pattern>
+                                    <shadedPattern>${shadingPrefix}.cn.laifuzhi.joymq.common</shadedPattern>
+                                </relocation>
+                            </relocations>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>${maven-antrun-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <unzip dest="${classesShadedDir}">
+                                    <fileset dir="${project.build.directory}">
+                                        <include name="${jarName}"/>
+                                    </fileset>
+                                </unzip>
+                                <move file="${classesShadedNativeDir}/libnetty_resolver_dns_native_macos_x86_64.jnilib"
+                                      tofile="${classesShadedNativeDir}/lib${shadingPrefix}_netty_resolver_dns_native_macos_x86_64.jnilib"/>
+                                <move file="${classesShadedNativeDir}/libnetty_transport_native_epoll_aarch_64.so"
+                                      tofile="${classesShadedNativeDir}/lib${shadingPrefix}_netty_transport_native_epoll_aarch_64.so"/>
+                                <move file="${classesShadedNativeDir}/libnetty_transport_native_epoll_x86_64.so"
+                                      tofile="${classesShadedNativeDir}/lib${shadingPrefix}_netty_transport_native_epoll_x86_64.so"/>
+                                <move file="${classesShadedNativeDir}/libnetty_transport_native_kqueue_x86_64.jnilib"
+                                      tofile="${classesShadedNativeDir}/lib${shadingPrefix}_netty_transport_native_kqueue_x86_64.jnilib"/>
+                                <jar destfile="${project.build.directory}/${jarName}" basedir="${classesShadedDir}"/>
+                                <delete dir="${classesShadedDir}"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
