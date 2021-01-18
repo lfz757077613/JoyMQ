@@ -23,7 +23,7 @@ public class SendMsgResp extends BaseInfo {
         byte respTypeByte = byteBuf.readByte();
         this.respType = RespTypeEnum.getByType(respTypeByte);
         if (this.respType == null) {
-            throw new IllegalArgumentException("respType:" + respTypeByte);
+            throw new IllegalArgumentException();
         }
         return this;
     }

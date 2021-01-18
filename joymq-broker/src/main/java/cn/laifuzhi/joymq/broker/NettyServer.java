@@ -44,6 +44,7 @@ public class NettyServer {
 
     @PostConstruct
     private void init() {
+        // 优先使用native能力
         EventLoopGroup bossEventLoopGroup = null;
         EventLoopGroup workerEventLoopGroup = null;
         Class<? extends ServerChannel> channelClass = null;
