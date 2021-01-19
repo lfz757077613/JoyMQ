@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 abstract class BaseInfo implements JoyMQModel {
-    private static final AtomicInteger DATAID_GENERATOR = new AtomicInteger();
+    private static final AtomicInteger ID_GENERATOR = new AtomicInteger();
     private static final int MAX_FROM_LENGTH = 64;
     private static final int MAX_GROUP_LENGTH = 64;
     private DataTypeEnum type;
@@ -27,7 +27,7 @@ abstract class BaseInfo implements JoyMQModel {
         }
         this.type = type;
         this.from = from;
-        this.dataId = DATAID_GENERATOR.incrementAndGet();
+        this.dataId = ID_GENERATOR.incrementAndGet();
         this.group = group;
     }
 
@@ -67,12 +67,13 @@ abstract class BaseInfo implements JoyMQModel {
     @Override
     public ByteBuf encode(ByteBuf byteBuf) {
         byteBuf = byteBuf.writeByte(this.type.getType());
-        byteBuf = byteBuf.writerIndex(Byte.BYTES + Short.BYTES);
+        int baseLengthWriterIndex = byteBuf.writerIndex();
+        byteBuf = byteBuf.writerIndex(baseLengthWriterIndex + Short.BYTES);
         byte[] fromBytes = this.from.getBytes(StandardCharsets.UTF_8);
         byteBuf = byteBuf.writeShort(fromBytes.length).writeBytes(fromBytes);
         byteBuf = byteBuf.writeInt(this.dataId);
         byte[] groupBytes = this.group.getBytes(StandardCharsets.UTF_8);
         byteBuf = byteBuf.writeShort(groupBytes.length).writeBytes(groupBytes);
-        return byteBuf.setShort(Byte.BYTES, byteBuf.readableBytes() - Short.BYTES - Byte.BYTES);
+        return byteBuf.setShort(baseLengthWriterIndex, byteBuf.writerIndex() - baseLengthWriterIndex - Short.BYTES);
     }
 }

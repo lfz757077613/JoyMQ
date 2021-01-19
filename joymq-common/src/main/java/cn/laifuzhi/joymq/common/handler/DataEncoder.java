@@ -14,19 +14,14 @@ public class DataEncoder extends MessageToByteEncoder<JoyMQModel> {
 
     @Override
     protected void encode(ChannelHandlerContext ctx, JoyMQModel msg, ByteBuf out) throws Exception {
-        ByteBuf ioBuffer = null;
         try {
             out.writeInt(DataDecoder.MAGIC_NUMBER);
-            ioBuffer = allocateBuffer(ctx, msg, isPreferDirect());
-            ioBuffer = msg.encode(ioBuffer);
-            out.writeInt(ioBuffer.readableBytes());
-            out.writeBytes(ioBuffer);
+            int lengthWriterIndex = out.writerIndex();
+            out.writerIndex(lengthWriterIndex + Integer.BYTES);
+            out = msg.encode(out);
+            out.setInt(lengthWriterIndex, out.writerIndex() - Integer.BYTES - Integer.BYTES);
         } catch (Exception e) {
             log.error("encode error remoteAddress:{}", ctx.channel().remoteAddress(), e);
-        } finally {
-            if (ioBuffer != null) {
-                ioBuffer.release();
-            }
         }
     }
 }

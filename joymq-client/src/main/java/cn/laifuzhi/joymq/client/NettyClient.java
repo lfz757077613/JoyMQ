@@ -24,7 +24,19 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.extern.slf4j.Slf4j;
+import sun.nio.ch.DirectBuffer;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -89,4 +101,32 @@ public class NettyClient {
 
                 TimeUnit.HOURS.sleep(1);
     }
+
+//    public static void main(String[] args) throws IOException, InterruptedException {
+//        ByteBuffer allocate2 = ByteBuffer.allocate(16);
+//        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(16);
+//        ((DirectBuffer)byteBuffer).cleaner().clean();
+//        byteBuffer.putInt(11);
+//        final RandomAccessFile rawFile = new RandomAccessFile("/Users/lfz/Desktop/test.txt", "rw");
+//        FileChannel fileChannel = rawFile.getChannel();
+//        MappedByteBuffer map = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, 1024);
+//        fileChannel.write(ByteBuffer.wrap("6".getBytes()));
+//        fileChannel.force(false);
+//        byte[] bytes1 = new byte[3];
+//        map.get(bytes1, 0, 3);
+//        System.out.println(new String(bytes1));
+//        map.put("6".getBytes(), 0, "7".getBytes().length);
+//        map.force();
+//        ByteBuffer allocate1 = ByteBuffer.allocate(10);
+//        byte[] bytes = "123".getBytes();
+//        ByteBuffer allocate = ByteBuffer.wrap(bytes);
+//        System.out.println(fileChannel.position());
+//        System.out.println(fileChannel.size());
+//        fileChannel.write(allocate);
+//        System.out.println(fileChannel.position());
+//        System.out.println(fileChannel.size());
+//
+//        fileChannel.force(false);
+//        fileChannel.close();
+//    }
 }
