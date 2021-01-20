@@ -3,6 +3,7 @@ package cn.laifuzhi.joymq.client;
 import cn.laifuzhi.joymq.common.handler.DataDecoder;
 import cn.laifuzhi.joymq.common.handler.DataEncoder;
 import cn.laifuzhi.joymq.common.model.Ping;
+import cn.laifuzhi.joymq.common.model.SendMsgReq;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -38,6 +39,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class NettyClient {
@@ -90,16 +92,18 @@ public class NettyClient {
     public static void main(String[] args) throws InterruptedException {
         GlobalEventExecutor eventExecutors = GlobalEventExecutor.INSTANCE;
         Channel channel = new NettyClient().connect();
-        channel.writeAndFlush(new Ping("1","")).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-//        for (; ; ) {
+        AtomicInteger atomicInteger = new AtomicInteger();
+//        channel.writeAndFlush(new Ping("1","")).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        for (; ; ) {
 //            TimeUnit.MILLISECONDS.sleep(10);
-//            if (!channel.isWritable()) {
-//                continue;
-//            }
-//            channel.writeAndFlush(new Ping("赖福智1111111111111111111111111111111111111"));
-//        }
+            if (!channel.isWritable()) {
+                continue;
+            }
+            channel.writeAndFlush(new SendMsgReq("", "2", "", "123".getBytes())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            System.out.println(atomicInteger.incrementAndGet());
+        }
 
-                TimeUnit.HOURS.sleep(1);
+//                TimeUnit.HOURS.sleep(1);
     }
 
 //    public static void main(String[] args) throws IOException, InterruptedException {
