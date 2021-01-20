@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
@@ -44,10 +45,11 @@ abstract class BaseInfo implements JoyMQModel {
 
     @Override
     public BaseInfo decode(ByteBuf byteBuf) {
-        this.type = DataTypeEnum.getByType(byteBuf.readByte());
-        if (this.type == null) {
+        Optional<DataTypeEnum> dataTypeOptional = DataTypeEnum.getByType(byteBuf.readByte());
+        if (!dataTypeOptional.isPresent()) {
             throw new IllegalArgumentException();
         }
+        this.type = dataTypeOptional.get();
         short baseLength = byteBuf.readShort();
         byteBuf = byteBuf.readSlice(baseLength);
         short fromLength = byteBuf.readShort();

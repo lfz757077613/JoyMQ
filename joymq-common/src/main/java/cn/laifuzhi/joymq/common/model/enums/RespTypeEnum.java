@@ -5,6 +5,7 @@ import lombok.Getter;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Getter
 @AllArgsConstructor
@@ -22,8 +23,8 @@ public enum RespTypeEnum {
         }
     }
 
-    public static RespTypeEnum getByType(byte type) {
-        return typeEnumMap.get(type);
+    public static Optional<RespTypeEnum> getByType(byte type) {
+        return Optional.ofNullable(typeEnumMap.get(type));
     }
 
     public static boolean contains(byte type) {

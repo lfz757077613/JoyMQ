@@ -3,6 +3,7 @@ package cn.laifuzhi.joymq.common.model;
 import cn.laifuzhi.joymq.common.model.enums.DataTypeEnum;
 import cn.laifuzhi.joymq.common.model.enums.FlushTypeEnum;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,7 +16,7 @@ public class SendMsgReq extends BaseInfo {
     private String topic;
     private FlushTypeEnum flushType;
     private int bodyCRC;
-    private byte[] body;
+    private ByteBuf body;
 
     public SendMsgReq(String from, String group, String topic, byte[] body) {
         super(DataTypeEnum.SEND_MSG_REQ, from, group);
@@ -24,7 +25,7 @@ public class SendMsgReq extends BaseInfo {
             throw new IllegalArgumentException();
         }
         this.topic = topic;
-        this.body = body;
+        this.body = Unpooled.wrappedBuffer(body);
     }
 
     @Override
@@ -34,15 +35,14 @@ public class SendMsgReq extends BaseInfo {
         if (bodyLength > MAX_BODY_LENGTH) {
             throw new IllegalArgumentException();
         }
-        this.body = new byte[bodyLength];
-        byteBuf.readBytes(this.body);
+        this.body = byteBuf.readRetainedSlice(bodyLength);
         return this;
     }
 
     @Override
     public ByteBuf encode(ByteBuf byteBuf) {
         super.encode(byteBuf);
-        return byteBuf.writeInt(this.body.length).writeBytes(this.body);
+        return byteBuf.writeInt(this.body.readableBytes()).writeBytes(this.body);
     }
 
     @Override

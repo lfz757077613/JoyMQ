@@ -1,9 +1,7 @@
 package cn.laifuzhi.joymq.broker;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import io.netty.util.internal.PlatformDependent;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
@@ -11,19 +9,15 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.lang.reflect.Field;
 import java.util.Objects;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 @Component
 public class DirectMemReporter {
-    private static final String THREAD_NAME = "directMem";
-    private ScheduledExecutorService executor = MoreExecutors.getExitingScheduledExecutorService(
-            new ScheduledThreadPoolExecutor(1, new CustomizableThreadFactory(THREAD_NAME)),
-            10,
-            TimeUnit.SECONDS);
+    private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
     private long periodSeconds = 10;
 
@@ -46,6 +40,7 @@ public class DirectMemReporter {
         while (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
             log.info("DirectMemReporter await ...");
         }
+        log.info("DirectMemReporter shutdown");
     }
 
 }

@@ -7,6 +7,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Optional;
+
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SendMsgResp extends BaseInfo {
@@ -20,11 +22,11 @@ public class SendMsgResp extends BaseInfo {
     @Override
     public SendMsgResp decode(ByteBuf byteBuf) {
         super.decode(byteBuf);
-        byte respTypeByte = byteBuf.readByte();
-        this.respType = RespTypeEnum.getByType(respTypeByte);
-        if (this.respType == null) {
+        Optional<RespTypeEnum> respTypeOptional = RespTypeEnum.getByType(byteBuf.readByte());
+        if (!respTypeOptional.isPresent()) {
             throw new IllegalArgumentException();
         }
+        this.respType = respTypeOptional.get();
         return this;
     }
 

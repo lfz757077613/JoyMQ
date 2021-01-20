@@ -8,6 +8,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Constructor;
+import java.util.Optional;
 
 // 私有协议，前四字节是魔数，接着四个字节是数据长度，接着是一个完整数据包
 // 完整数据包的第一个字节是类型，然后两个字节是base数据长度，然后是base数据，最后是其他数据
@@ -38,12 +39,12 @@ public class DataDecoder extends LengthFieldBasedFrameDecoder {
                 return null;
             }
             byte dataType = byteBuf.getByte(0);
-            DataTypeEnum dataTypeEnum = DataTypeEnum.getByType(dataType);
-            if (dataTypeEnum == null) {
+            Optional<DataTypeEnum> dataTypeOptional = DataTypeEnum.getByType(dataType);
+            if (!dataTypeOptional.isPresent()) {
                 log.error("no such msg, dataType:{}", dataType);
                 return null;
             }
-            Constructor<? extends JoyMQModel> constructor = dataTypeEnum.getMqModelClass().getDeclaredConstructor();
+            Constructor<? extends JoyMQModel> constructor = dataTypeOptional.get().getMqModelClass().getDeclaredConstructor();
             constructor.setAccessible(true);
             return constructor.newInstance().decode(byteBuf);
         } catch (Exception e) {
