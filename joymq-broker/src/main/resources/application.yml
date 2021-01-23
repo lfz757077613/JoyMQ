@@ -5,3 +5,6 @@ spring:
 # 自定义配置
 broker:
   port: 6792
+  backlog: 1024
+  confFilename: broker.conf
+  confReloadPeriod: 60000

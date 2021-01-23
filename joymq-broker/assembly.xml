@@ -1,4 +1,4 @@
-`<assembly>
+<assembly>
     <!--最终包名为${project.build.finalName}-assembly.tgz-->
     <id>assembly</id>
     <formats>
@@ -11,9 +11,9 @@
     <fileSets>
         <fileSet>
             <!-- 原文件夹，将bin目录的内容复制到目标文件夹 -->
-            <directory>bin</directory>
+            <directory>${project.basedir}/bin</directory>
             <!-- 目标文件夹 -->
-            <outputDirectory>bin</outputDirectory>
+            <outputDirectory>/</outputDirectory>
             <fileMode>0755</fileMode>
             <!--如果是脚本，一定要改为unix.如果是在windows上面编码，会出现dos编写问题-->
             <lineEnding>unix</lineEnding>
@@ -22,11 +22,21 @@
         </fileSet>
 
         <fileSet>
+            <!-- maven编译目录target/classes -->
+            <directory>${project.build.outputDirectory}</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <!-- 复制配置文件 -->
+                <include>broker.conf</include>
+            </includes>
+        </fileSet>
+
+        <fileSet>
             <!-- maven编译目录target目录 -->
             <directory>${project.build.directory}</directory>
             <outputDirectory>/</outputDirectory>
-            <!-- 只复制spring打包的可执行fat jar -->
             <includes>
+                <!-- 复制spring打包的可执行fat jar -->
                 <include>${project.build.finalName}.${project.packaging}</include>
             </includes>
         </fileSet>

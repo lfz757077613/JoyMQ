@@ -5,10 +5,12 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.concurrent.TimeUnit;
+
 @Slf4j
 public class ConnectHandler extends IdleStateHandler {
-    public ConnectHandler(int readerIdleTimeSeconds, int writerIdleTimeSeconds, int allIdleTimeSeconds) {
-        super(readerIdleTimeSeconds, writerIdleTimeSeconds, allIdleTimeSeconds);
+    public ConnectHandler(int readerIdleTime, int writerIdleTime, int allIdleTime) {
+        super(readerIdleTime, writerIdleTime, allIdleTime, TimeUnit.MILLISECONDS);
     }
 
     @Override
