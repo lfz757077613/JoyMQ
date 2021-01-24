@@ -1,10 +1,12 @@
 package cn.laifuzhi.joymq.broker;
 
 import cn.laifuzhi.joymq.broker.config.BrokerDynamicConf;
-import cn.laifuzhi.joymq.broker.handler.BrokerHandlerWrapper;
+import cn.laifuzhi.joymq.broker.handler.BrokerHandler;
 import cn.laifuzhi.joymq.broker.handler.ConnectHandler;
 import cn.laifuzhi.joymq.common.handler.DataDecoder;
 import cn.laifuzhi.joymq.common.handler.DataEncoder;
+import cn.laifuzhi.joymq.common.utils.UtilAll;
+import com.google.common.base.Preconditions;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -19,6 +21,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +37,7 @@ public class NettyServer {
     @Value("${broker.backlog}")
     private int backlog;
     @Resource
-    private BrokerHandlerWrapper brokerHandlerWrapper;
+    private BrokerHandler brokerHandler;
     @Resource
     private BrokerDynamicConf brokerConf;
 
@@ -42,6 +45,7 @@ public class NettyServer {
 
     @PostConstruct
     private void init() {
+        systemCheck();
         // 只监听一个端口，bossGroup只设置一个线程就可以
         EventLoopGroup bossEventLoopGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerEventLoopGroup = new NioEventLoopGroup();
@@ -65,17 +69,25 @@ public class NettyServer {
                         p.addLast(new ConnectHandler(brokerConf.getConfigBean().getChannelIdleTimeout(), 0, 0));
                         p.addLast(new DataDecoder());
                         p.addLast(DataEncoder.INSTANCE);
-                        p.addLast(brokerHandlerWrapper);
+                        p.addLast(brokerHandler);
                     }
                 });
         serverBootstrap.bind().syncUninterruptibly();
-        log.info("netty server start on port:{}", brokerPort);
+        log.info("JoyMQ broker start on port:{}", brokerPort);
     }
 
     @PreDestroy
     private void destroy() {
         serverBootstrap.config().group().shutdownGracefully().awaitUninterruptibly();
         serverBootstrap.config().childGroup().shutdownGracefully().awaitUninterruptibly();
-        log.info("netty server shutdown");
+        log.info("JoyMQ broker shutdown");
+    }
+
+    private void systemCheck() {
+        Preconditions.checkArgument(
+                UtilAll.getInnerIp() != null
+                        && UtilAll.getPid() > 0
+                        && StringUtils.length(UtilAll.getFrom()) <= 64
+        );
     }
 }

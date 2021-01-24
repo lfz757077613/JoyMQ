@@ -32,7 +32,7 @@ public class UtilAll {
                     InetAddress inetAddress = inetAddresses.nextElement();
                     if (inetAddress.isSiteLocalAddress() && inetAddress instanceof Inet4Address) {
                         innerIp = inetAddress.getHostAddress();
-                        log.debug("get innerIp:{}", innerIp);
+                        log.info("get innerIp:{}", innerIp);
                         break;
                     }
                 }
@@ -45,7 +45,7 @@ public class UtilAll {
         String name = runtime.getName();
         try {
             pid = Integer.parseInt(name.substring(0, name.indexOf('@')));
-            log.debug("get pid:{}", pid);
+            log.info("get pid:{}", pid);
         } catch (Exception e) {
             log.error("get pid error name:{}", name, e);
         }
@@ -57,6 +57,10 @@ public class UtilAll {
 
     public static int getPid() {
         return pid;
+    }
+
+    public static String getFrom() {
+        return getInnerIp() + "@" + getPid();
     }
 
     public static String currentStackTrace() {
@@ -80,7 +84,7 @@ public class UtilAll {
     public static int crc32(byte[] array) {
         CRC32 crc32 = new CRC32();
         crc32.update(array);
-        return (int) (crc32.getValue() & 0x7FFFFFFF);
+        return (int) crc32.getValue();
     }
 
     public static String jstack() {

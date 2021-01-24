@@ -20,13 +20,14 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class DirectMemReporter {
     private static final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+    private static final String FILED_NAME = "DIRECT_MEMORY_COUNTER";
     @Resource
     private BrokerDynamicConf brokerConf;
     private AtomicLong directMem;
 
     @PostConstruct
     private void init() throws IllegalAccessException {
-        Field field = ReflectionUtils.findField(PlatformDependent.class, "DIRECT_MEMORY_COUNTER");
+        Field field = ReflectionUtils.findField(PlatformDependent.class, FILED_NAME);
         Objects.requireNonNull(field).setAccessible(true);
         this.directMem = (AtomicLong) field.get(PlatformDependent.class);
         log.info("DirectMemReporter init");

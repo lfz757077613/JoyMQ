@@ -19,7 +19,7 @@ public class DataEncoder extends MessageToByteEncoder<JoyMQModel> {
             int lengthWriterIndex = out.writerIndex();
             out.writerIndex(lengthWriterIndex + Integer.BYTES);
             out = msg.encode(out);
-            out.setInt(lengthWriterIndex, out.writerIndex() - Integer.BYTES - Integer.BYTES);
+            out.setInt(lengthWriterIndex, out.writerIndex() - DataDecoder.LENGTH_FIELD_OFFSET - DataDecoder.LENGTH_FIELD_LENGTH);
         } catch (Exception e) {
             log.error("encode error remoteAddress:{}", ctx.channel().remoteAddress(), e);
         }

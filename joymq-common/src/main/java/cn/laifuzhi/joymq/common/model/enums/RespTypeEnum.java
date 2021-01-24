@@ -11,6 +11,8 @@ import java.util.Optional;
 @AllArgsConstructor
 public enum RespTypeEnum {
     OK((byte) 0, "success"),
+    DATA_TYPE_NOT_EXIST((byte) 1, "data type not exist"),
+    DECODE_ERROR((byte) 2, "decode error"),
     ;
     private static Map<Byte, RespTypeEnum> typeEnumMap = new HashMap<>();
 

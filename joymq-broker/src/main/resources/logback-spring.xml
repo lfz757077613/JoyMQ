@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 每隔30s自动检查配置文件是否改变，改变的话重新加载配置 -->
-<configuration scan="true" scanPeriod="30 seconds">
+<configuration scan="false">
     <!-- 设置日志输出根目录为用户主目录下的logs目录，没有会新建 -->
     <property name="LOG_DIR" value="${user.home}/logs"/>
     <!-- 使用springboot默认配置，其中有CONSOLE_LOG_PATTERN和FILE_LOG_PATTERN的配置 -->
@@ -12,9 +11,6 @@
 
     <appender name="infoAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/info.log</file>
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>DEBUG</level>
-        </filter>
         <encoder>
             <charset>UTF-8</charset>
             <pattern>${FILE_LOG_PATTERN}</pattern>

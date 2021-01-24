@@ -15,8 +15,8 @@ public class SendMsgHandler extends SimpleChannelInboundHandler<SendMsgReq> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SendMsgReq sendMsgReq) throws Exception {
         try {
-            ByteBuf body = sendMsgReq.getBody();
-            body.release();
+            byte[] body = sendMsgReq.getBody();
+            ByteBuf origin = sendMsgReq.getOrigin();
         } catch (Exception e) {
             log.error("SendMsgHandler error remoteAddress:{}", ctx.channel().remoteAddress(), e);
         }

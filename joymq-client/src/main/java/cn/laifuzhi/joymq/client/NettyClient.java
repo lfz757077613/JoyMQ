@@ -4,6 +4,7 @@ import cn.laifuzhi.joymq.common.handler.DataDecoder;
 import cn.laifuzhi.joymq.common.handler.DataEncoder;
 import cn.laifuzhi.joymq.common.model.Ping;
 import cn.laifuzhi.joymq.common.model.SendMsgReq;
+import cn.laifuzhi.joymq.common.model.enums.FlushTypeEnum;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -94,14 +95,14 @@ public class NettyClient {
         Channel channel = new NettyClient().connect();
         AtomicInteger atomicInteger = new AtomicInteger();
 //        channel.writeAndFlush(new Ping("1","")).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-        for (; ; ) {
+//        for (; ; ) {
 //            TimeUnit.MILLISECONDS.sleep(10);
-            if (!channel.isWritable()) {
-                continue;
-            }
-            channel.writeAndFlush(new SendMsgReq("", "2", "", "123".getBytes())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+//            if (!channel.isWritable()) {
+//                continue;
+//            }
+            channel.writeAndFlush(new SendMsgReq("group", "topic", FlushTypeEnum.SYNC, "赖福智".getBytes())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             System.out.println(atomicInteger.incrementAndGet());
-        }
+//        }
 
 //                TimeUnit.HOURS.sleep(1);
     }

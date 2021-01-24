@@ -15,19 +15,19 @@ public class ConnectHandler extends IdleStateHandler {
 
     @Override
     protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) throws Exception {
-        log.info("channelIdle, remoteAddress:{}", ctx.channel().remoteAddress());
+        log.info("channelIdle remoteAddress:{}", ctx.channel().remoteAddress());
         ctx.close();
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.info("channelActive, remoteAddress:{}", ctx.channel().remoteAddress());
+        log.info("channelActive remoteAddress:{}", ctx.channel().remoteAddress());
         super.channelActive(ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.info("channelInactive, remoteAddress:{}", ctx.channel().remoteAddress());
+        log.info("channelInactive remoteAddress:{}", ctx.channel().remoteAddress());
         super.channelInactive(ctx);
     }
 
