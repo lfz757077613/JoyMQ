@@ -26,6 +26,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import sun.nio.ch.DirectBuffer;
 
 import java.io.File;
@@ -95,14 +96,15 @@ public class NettyClient {
         Channel channel = new NettyClient().connect();
         AtomicInteger atomicInteger = new AtomicInteger();
 //        channel.writeAndFlush(new Ping("1","")).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-//        for (; ; ) {
+        byte[] bytes = StringUtils.repeat("赖", 1024).getBytes();
+        for (int i = 0; i < 500000000; i++) {
 //            TimeUnit.MILLISECONDS.sleep(10);
 //            if (!channel.isWritable()) {
 //                continue;
 //            }
-            channel.writeAndFlush(new SendMsgReq("group", "topic", FlushTypeEnum.SYNC, "赖福智".getBytes())).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+            channel.writeAndFlush(new SendMsgReq("group", "topic", FlushTypeEnum.SYNC, bytes)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             System.out.println(atomicInteger.incrementAndGet());
-//        }
+        }
 
 //                TimeUnit.HOURS.sleep(1);
     }

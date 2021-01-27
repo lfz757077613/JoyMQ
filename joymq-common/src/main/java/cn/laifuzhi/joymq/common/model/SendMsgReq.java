@@ -2,8 +2,8 @@ package cn.laifuzhi.joymq.common.model;
 
 import cn.laifuzhi.joymq.common.model.enums.DataTypeEnum;
 import cn.laifuzhi.joymq.common.model.enums.FlushTypeEnum;
-import cn.laifuzhi.joymq.common.utils.UtilAll;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,8 +17,7 @@ public class SendMsgReq extends BaseInfoReq {
     private static final int MAX_BODY_LENGTH = 3 * 1024 * 1024;
     private String topic;
     private byte flushType;
-    private byte[] body;
-    private int bodyCRC;
+    private ByteBuf body;
 
     // decode时保留原始ByteBuf的引用
     private ByteBuf origin;
@@ -31,8 +30,7 @@ public class SendMsgReq extends BaseInfoReq {
         }
         this.topic = topic;
         this.flushType = flushType.getType();
-        this.body = body;
-        this.bodyCRC = UtilAll.crc32(body);
+        this.body = Unpooled.wrappedBuffer(body);
     }
 
     @Override
@@ -41,9 +39,7 @@ public class SendMsgReq extends BaseInfoReq {
         short topicLength = byteBuf.readShort();
         this.topic = byteBuf.readCharSequence(topicLength, StandardCharsets.UTF_8).toString();
         this.flushType = byteBuf.readByte();
-        this.body = new byte[byteBuf.readInt()];
-        byteBuf = byteBuf.readBytes(this.body);
-        this.bodyCRC = byteBuf.readInt();
+        this.body = byteBuf.readSlice(byteBuf.readInt());
         this.origin = byteBuf.resetReaderIndex().retain();
         return this;
     }
@@ -54,8 +50,7 @@ public class SendMsgReq extends BaseInfoReq {
         byte[] topicBytes = this.topic.getBytes(StandardCharsets.UTF_8);
         byteBuf = byteBuf.writeShort(topicBytes.length).writeBytes(topicBytes);
         byteBuf = byteBuf.writeByte(this.flushType);
-        byteBuf = byteBuf.writeInt(this.body.length).writeBytes(this.body);
-        byteBuf = byteBuf.writeInt(this.bodyCRC);
+        byteBuf = byteBuf.writeInt(this.body.readableBytes()).writeBytes(this.body);
         return byteBuf;
     }
 

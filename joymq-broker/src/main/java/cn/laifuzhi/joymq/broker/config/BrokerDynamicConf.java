@@ -19,11 +19,12 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class BrokerDynamicConf {
-    private static final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
     @Value("${broker.confFilename}")
     private String filename;
     @Value("${broker.confReloadPeriod}")
     private int reloadPeriod;
+
+    private ScheduledExecutorService scheduledExecutor;
     private File file;
     private long lastModified;
     @Getter
@@ -35,13 +36,14 @@ public class BrokerDynamicConf {
         this.file = new File(jarPath + File.separator + filename);
         log.info("BrokerConf init");
         checkAndConfigure();
-        scheduledExecutor.scheduleWithFixedDelay(this::checkAndConfigure, reloadPeriod, reloadPeriod, TimeUnit.MILLISECONDS);
+        this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        this.scheduledExecutor.scheduleWithFixedDelay(this::checkAndConfigure, reloadPeriod, reloadPeriod, TimeUnit.MILLISECONDS);
     }
 
     @PreDestroy
     private void destroy() throws InterruptedException {
-        scheduledExecutor.shutdown();
-        while (!scheduledExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+        this.scheduledExecutor.shutdown();
+        while (!this.scheduledExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
             log.info("BrokerConf await ...");
         }
         log.info("BrokerConf shutdown");

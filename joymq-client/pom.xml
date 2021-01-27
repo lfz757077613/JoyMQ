@@ -14,7 +14,8 @@
         <classesShadedDir>${project.build.directory}/classes-shaded</classesShadedDir>
         <classesShadedNativeDir>${classesShadedDir}/META-INF/native</classesShadedNativeDir>
         <shadingPrefix>joymqclientshade</shadingPrefix>
-        <jarName>${project.build.finalName}.${project.packaging}</jarName>
+        <shadingJarClassifierName>shade</shadingJarClassifierName>
+        <jarName>${project.build.finalName}-${shadingJarClassifierName}.${project.packaging}</jarName>
     </properties>
 
     <dependencies>
@@ -33,6 +34,11 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
     </dependencies>
 
@@ -53,6 +59,8 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>${shadingJarClassifierName}</shadedClassifierName>
                             <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
                             <createSourcesJar>true</createSourcesJar>
                             <shadeSourcesContent>true</shadeSourcesContent>

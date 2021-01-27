@@ -37,44 +37,45 @@ public class BrokerHandler extends SimpleChannelInboundHandler<BaseInfoReq> {
 
     @PostConstruct
     private void init() {
-        executor = new ThreadPoolExecutor(
-                Runtime.getRuntime().availableProcessors() * 10,
-                Runtime.getRuntime().availableProcessors() * 10,
+        this.executor = new ThreadPoolExecutor(
+                200,
+                200,
                 0,
                 TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(100),
+                new LinkedBlockingQueue<>(1000000),
                 new CustomizableThreadFactory("BrokerHandler")
         );
-        Msg2HandlerMap = Maps.newHashMap();
-        Msg2HandlerMap.put(DataTypeEnum.PING, PingHandler.class.getSimpleName());
-        Msg2HandlerMap.put(DataTypeEnum.SEND_MSG_REQ, SendMsgHandler.class.getSimpleName());
+        this.Msg2HandlerMap = Maps.newHashMap();
+        this.Msg2HandlerMap.put(DataTypeEnum.PING, PingHandler.class.getSimpleName());
+        this.Msg2HandlerMap.put(DataTypeEnum.SEND_MSG_REQ, SendMsgHandler.class.getSimpleName());
     }
 
     @PreDestroy
     private void destroy() throws InterruptedException {
-        executor.shutdown();
-        while (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+        this.executor.shutdown();
+        while (!this.executor.awaitTermination(5, TimeUnit.SECONDS)) {
             log.info("BrokerHandler await ...");
         }
         log.info("BrokerHandler shutdown");
     }
 
     private SimpleChannelInboundHandler<? extends BaseInfoReq> getHandlerByMsgEnum(DataTypeEnum dataTypeEnum) {
-        String handlerSimpleName = Msg2HandlerMap.get(dataTypeEnum);
+        String handlerSimpleName = this.Msg2HandlerMap.get(dataTypeEnum);
         if (StringUtils.isBlank(handlerSimpleName)) {
             return null;
         }
-        return handlerMap.get(handlerSimpleName);
+        return this.handlerMap.get(handlerSimpleName);
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, BaseInfoReq req) throws Exception {
         try {
-            executor.submit(() -> {
+            this.executor.submit(() -> {
                 try {
                     SimpleChannelInboundHandler<? extends BaseInfoReq> handler = getHandlerByMsgEnum(req.dataType());
                     if (handler == null) {
-                        log.error("broker not support dataType:{} remoteAddress:{}", ctx.channel().remoteAddress(), req.dataType());
+                        log.error("broker not support dataType:{} reqFrom:{}", req.dataType(), req.getReqFrom());
+                        new SystemResp(req.getDataId(), RespTypeEnum.DATA_TYPE_NOT_SUPPORT).writeResponse(ctx);
                         return;
                     }
                     handler.channelRead(ctx, req);

@@ -56,7 +56,7 @@ public class NettyServer {
             workerEventLoopGroup = new EpollEventLoopGroup();
             channelClass = EpollServerSocketChannel.class;
         }
-        serverBootstrap = new ServerBootstrap().group(bossEventLoopGroup, workerEventLoopGroup)
+        this.serverBootstrap = new ServerBootstrap().group(bossEventLoopGroup, workerEventLoopGroup)
                 .channel(channelClass)
                 .localAddress(brokerPort)
                 .option(ChannelOption.SO_BACKLOG, backlog)
@@ -72,14 +72,14 @@ public class NettyServer {
                         p.addLast(brokerHandler);
                     }
                 });
-        serverBootstrap.bind().syncUninterruptibly();
+        this.serverBootstrap.bind().syncUninterruptibly();
         log.info("JoyMQ broker start on port:{}", brokerPort);
     }
 
     @PreDestroy
     private void destroy() {
-        serverBootstrap.config().group().shutdownGracefully().awaitUninterruptibly();
-        serverBootstrap.config().childGroup().shutdownGracefully().awaitUninterruptibly();
+        this.serverBootstrap.config().group().shutdownGracefully().awaitUninterruptibly();
+        this.serverBootstrap.config().childGroup().shutdownGracefully().awaitUninterruptibly();
         log.info("JoyMQ broker shutdown");
     }
 

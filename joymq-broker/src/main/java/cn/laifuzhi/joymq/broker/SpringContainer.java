@@ -1,4 +1,4 @@
-package cn.laifuzhi.joymq.broker.util;
+package cn.laifuzhi.joymq.broker;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;

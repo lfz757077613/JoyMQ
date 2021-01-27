@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @Component
 public class DirectMemReporter {
-    private static final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledExecutorService scheduledExecutor;
     private static final String FILED_NAME = "DIRECT_MEMORY_COUNTER";
     @Resource
     private BrokerDynamicConf brokerConf;
@@ -27,25 +27,25 @@ public class DirectMemReporter {
 
     @PostConstruct
     private void init() throws IllegalAccessException {
+        log.info("DirectMemReporter init");
         Field field = ReflectionUtils.findField(PlatformDependent.class, FILED_NAME);
         Objects.requireNonNull(field).setAccessible(true);
         this.directMem = (AtomicLong) field.get(PlatformDependent.class);
-        log.info("DirectMemReporter init");
+        this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         report();
     }
 
     @PreDestroy
     private void destroy() throws InterruptedException {
-        scheduledExecutor.shutdown();
-        while (!scheduledExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+        this.scheduledExecutor.shutdown();
+        while (!this.scheduledExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
             log.info("DirectMemReporter await ...");
         }
         log.info("DirectMemReporter shutdown");
     }
 
     private void report() {
-        log.info("server direct memory size:{}b, max:{}", directMem.get(), PlatformDependent.maxDirectMemory());
-        scheduledExecutor.schedule(this::report, brokerConf.getConfigBean().getDirectMemReportPeriod(), TimeUnit.MILLISECONDS);
+        log.info("server direct memory size:{}b, max:{}", this.directMem.get(), PlatformDependent.maxDirectMemory());
+        this.scheduledExecutor.schedule(this::report, this.brokerConf.getConfigBean().getDirectMemReportPeriod(), TimeUnit.MILLISECONDS);
     }
-
 }
