@@ -5,6 +5,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.EventExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +19,7 @@ public class SendMsgHandler extends SimpleChannelInboundHandler<SendMsgReq> {
         try {
             byte[] body = sendMsgReq.getBody();
             ByteBuf origin = sendMsgReq.getOrigin();
+            ctx.executor().execute(origin::release);
         } catch (Exception e) {
             log.error("SendMsgHandler error remoteAddress:{}", ctx.channel().remoteAddress(), e);
         }

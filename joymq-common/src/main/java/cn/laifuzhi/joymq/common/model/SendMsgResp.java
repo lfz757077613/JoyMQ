@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SendMsgResp extends BaseInfoResp {
 
-    public SendMsgResp(int dataId, RespTypeEnum respType) {
-        super(DataTypeEnum.SEND_MSG_RESP, dataId, respType);
+    public SendMsgResp(SendMsgReq req, RespTypeEnum respType) {
+        super(req, DataTypeEnum.SEND_MSG_RESP, respType);
     }
 
     @Override

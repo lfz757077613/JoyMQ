@@ -1,8 +1,11 @@
 package cn.laifuzhi.joymq.common.handler;
 
 import cn.laifuzhi.joymq.common.model.JoyMQModel;
+import cn.laifuzhi.joymq.common.model.SystemResp;
 import cn.laifuzhi.joymq.common.model.enums.DataTypeEnum;
+import cn.laifuzhi.joymq.common.model.enums.RespTypeEnum;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +29,7 @@ public class DataDecoder extends LengthFieldBasedFrameDecoder {
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
         ByteBuf byteBuf = null;
+        Integer dataId = null;
         try {
             //不是魔数开头直接拒绝访问
             if (in.readableBytes() >= Integer.BYTES && in.getInt(in.readerIndex()) != MAGIC_NUMBER) {
@@ -41,16 +45,21 @@ public class DataDecoder extends LengthFieldBasedFrameDecoder {
             // 跳过魔数和长度位
             byteBuf = byteBuf.skipBytes(LENGTH_FIELD_OFFSET + LENGTH_FIELD_LENGTH);
             byte dataType = byteBuf.getByte(byteBuf.readerIndex());
+            dataId = byteBuf.getInt(byteBuf.readerIndex() + Byte.BYTES);
             Optional<DataTypeEnum> dataTypeOptional = DataTypeEnum.getByType(dataType);
             if (!dataTypeOptional.isPresent()) {
-                log.error("data type not exist, dataType:{} remoteAddress:{}", dataType, ctx.channel().remoteAddress());
+                log.error("data type not exist dataType:{} remoteAddress:{} dataId:{}", dataType, ctx.channel().remoteAddress(), dataId);
+                new SystemResp(dataId, RespTypeEnum.DATA_TYPE_NOT_EXIST).writeResponse(ctx);
                 return null;
             }
             Constructor<? extends JoyMQModel> constructor = dataTypeOptional.get().getMqModelClass().getDeclaredConstructor();
             constructor.setAccessible(true);
             return constructor.newInstance().decode(byteBuf);
         } catch (Exception e) {
-            log.error("decode error remoteAddress:{}", ctx.channel().remoteAddress(), e);
+            log.error("decode error remoteAddress:{} dataId:{}", ctx.channel().remoteAddress(), dataId, e);
+            if (dataId != null) {
+                new SystemResp(dataId, RespTypeEnum.DECODE_ERROR).writeResponse(ctx);
+            }
             return null;
         } finally {
             if (byteBuf != null) {

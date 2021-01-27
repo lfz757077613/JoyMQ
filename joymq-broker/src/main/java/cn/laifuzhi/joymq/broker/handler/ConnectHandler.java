@@ -30,10 +30,4 @@ public class ConnectHandler extends IdleStateHandler {
         log.info("channelInactive remoteAddress:{}", ctx.channel().remoteAddress());
         super.channelInactive(ctx);
     }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.error("exceptionCaught remoteAddress:{}", ctx.channel().remoteAddress(), cause);
-        ctx.close();
-    }
 }

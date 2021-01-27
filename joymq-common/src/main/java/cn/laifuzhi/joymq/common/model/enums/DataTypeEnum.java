@@ -15,6 +15,7 @@ import java.util.Optional;
 @Getter
 @AllArgsConstructor
 public enum DataTypeEnum {
+    SYSTEM_RESP((byte) 0, Ping.class, "system response"),
     PING((byte) 1, Ping.class, "heartbeat request"),
     PONG((byte) 2, Pong.class, "heartbeat response"),
     SEND_MSG_REQ((byte) 3, SendMsgReq.class, "send message request"),

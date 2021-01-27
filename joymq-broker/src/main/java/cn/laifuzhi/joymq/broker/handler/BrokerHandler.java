@@ -1,8 +1,10 @@
 package cn.laifuzhi.joymq.broker.handler;
 
 import cn.laifuzhi.joymq.broker.config.BrokerDynamicConf;
-import cn.laifuzhi.joymq.common.model.JoyMQModel;
+import cn.laifuzhi.joymq.common.model.BaseInfoReq;
+import cn.laifuzhi.joymq.common.model.SystemResp;
 import cn.laifuzhi.joymq.common.model.enums.DataTypeEnum;
+import cn.laifuzhi.joymq.common.model.enums.RespTypeEnum;
 import com.google.common.collect.Maps;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -16,20 +18,19 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Sharable
 @Component
-public class BrokerHandler extends SimpleChannelInboundHandler<JoyMQModel> {
+public class BrokerHandler extends SimpleChannelInboundHandler<BaseInfoReq> {
     @Resource
     private BrokerDynamicConf brokerConf;
     @Resource
-    private Map<String, SimpleChannelInboundHandler<? extends JoyMQModel>> handlerMap;
+    private Map<String, SimpleChannelInboundHandler<? extends BaseInfoReq>> handlerMap;
 
     private ThreadPoolExecutor executor;
     private Map<DataTypeEnum, String> Msg2HandlerMap;
@@ -58,8 +59,7 @@ public class BrokerHandler extends SimpleChannelInboundHandler<JoyMQModel> {
         log.info("BrokerHandler shutdown");
     }
 
-
-    private SimpleChannelInboundHandler<? extends JoyMQModel> getHandlerByMsgEnum(DataTypeEnum dataTypeEnum) {
+    private SimpleChannelInboundHandler<? extends BaseInfoReq> getHandlerByMsgEnum(DataTypeEnum dataTypeEnum) {
         String handlerSimpleName = Msg2HandlerMap.get(dataTypeEnum);
         if (StringUtils.isBlank(handlerSimpleName)) {
             return null;
@@ -68,18 +68,29 @@ public class BrokerHandler extends SimpleChannelInboundHandler<JoyMQModel> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, JoyMQModel joyMQModel) throws Exception {
-        executor.submit(() -> {
-            try {
-                SimpleChannelInboundHandler<? extends JoyMQModel> handler = getHandlerByMsgEnum(joyMQModel.dataType());
-                if (handler == null) {
-                    log.error("broker not support dataType:{} remoteAddress:{}", ctx.channel().remoteAddress(), joyMQModel.dataType());
-                    return;
+    protected void channelRead0(ChannelHandlerContext ctx, BaseInfoReq req) throws Exception {
+        try {
+            executor.submit(() -> {
+                try {
+                    SimpleChannelInboundHandler<? extends BaseInfoReq> handler = getHandlerByMsgEnum(req.dataType());
+                    if (handler == null) {
+                        log.error("broker not support dataType:{} remoteAddress:{}", ctx.channel().remoteAddress(), req.dataType());
+                        return;
+                    }
+                    handler.channelRead(ctx, req);
+                } catch (Exception e) {
+                    ctx.fireExceptionCaught(e);
                 }
-                handler.channelRead(ctx, joyMQModel);
-            } catch (Exception e) {
-                ctx.fireExceptionCaught(e);
-            }
-        });
+            });
+        } catch (RejectedExecutionException e) {
+            log.error("broker busy reqFrom:{} dataId:{}", req.getReqFrom(), req.getDataId());
+            new SystemResp(req.getDataId(), RespTypeEnum.BROKER_BUSY).writeResponse(ctx);
+        }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        log.error("exceptionCaught remoteAddress:{}", ctx.channel().remoteAddress(), cause);
+        ctx.close();
     }
 }

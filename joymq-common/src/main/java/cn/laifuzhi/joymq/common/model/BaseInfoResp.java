@@ -4,12 +4,17 @@ import cn.laifuzhi.joymq.common.model.enums.DataTypeEnum;
 import cn.laifuzhi.joymq.common.model.enums.RespTypeEnum;
 import cn.laifuzhi.joymq.common.utils.UtilAll;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
 
+@Slf4j
 @Getter
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 public abstract class BaseInfoResp implements JoyMQModel {
@@ -17,12 +22,22 @@ public abstract class BaseInfoResp implements JoyMQModel {
     private byte dataType;
     private int dataId;
     private byte respType;
+    private String reqFrom;
     private String respFrom;
 
     BaseInfoResp(DataTypeEnum dataType, int dataId, RespTypeEnum respType) {
         this.dataType = dataType.getType();
         this.dataId = dataId;
         this.respType = respType.getType();
+        this.reqFrom = "";
+        this.respFrom = UtilAll.getFrom();
+    }
+
+    BaseInfoResp(BaseInfoReq req, DataTypeEnum dataType, RespTypeEnum respType) {
+        this.dataType = dataType.getType();
+        this.dataId = req.getDataId();
+        this.respType = respType.getType();
+        this.reqFrom = req.getReqFrom();
         this.respFrom = UtilAll.getFrom();
     }
 
@@ -32,6 +47,7 @@ public abstract class BaseInfoResp implements JoyMQModel {
         this.dataId = byteBuf.readInt();
         byteBuf = byteBuf.readSlice(byteBuf.readShort());
         this.respType = byteBuf.readByte();
+        this.reqFrom = byteBuf.readCharSequence(byteBuf.readShort(), StandardCharsets.UTF_8).toString();
         this.respFrom = byteBuf.readCharSequence(byteBuf.readShort(), StandardCharsets.UTF_8).toString();
         return this;
     }
@@ -43,9 +59,21 @@ public abstract class BaseInfoResp implements JoyMQModel {
         int baseLengthWriterIndex = byteBuf.writerIndex();
         byteBuf = byteBuf.writerIndex(baseLengthWriterIndex + Short.BYTES);
         byteBuf = byteBuf.writeByte(this.respType);
-        byte[] fromBytes = this.respFrom.getBytes(StandardCharsets.UTF_8);
-        byteBuf = byteBuf.writeShort(fromBytes.length).writeBytes(fromBytes);
+        byte[] reqFromBytes = this.reqFrom.getBytes(StandardCharsets.UTF_8);
+        byteBuf = byteBuf.writeShort(reqFromBytes.length).writeBytes(reqFromBytes);
+        byte[] respFromBytes = this.respFrom.getBytes(StandardCharsets.UTF_8);
+        byteBuf = byteBuf.writeShort(respFromBytes.length).writeBytes(respFromBytes);
         byteBuf = byteBuf.setShort(baseLengthWriterIndex, byteBuf.writerIndex() - baseLengthWriterIndex - Short.BYTES);
         return byteBuf;
+    }
+
+    public void writeResponse(ChannelHandlerContext ctx) {
+        Channel channel = ctx.channel();
+        if (!channel.isActive() || !channel.isWritable()) {
+            log.info("channel not active or not writable active:{} writable:{} respType:{} reqFrom:{} dataId:{}",
+                    channel.isActive(), channel.isWritable(), this.respType, this.reqFrom, this.dataId);
+            return;
+        }
+        channel.writeAndFlush(this).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 }
