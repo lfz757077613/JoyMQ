@@ -4,9 +4,6 @@ import cn.laifuzhi.joymq.common.model.enums.DataTypeEnum;
 import cn.laifuzhi.joymq.common.model.enums.RespTypeEnum;
 import cn.laifuzhi.joymq.common.utils.UtilAll;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,21 +14,13 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 @Getter
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
-public abstract class BaseInfoResp implements JoyMQModel {
+public abstract class BaseInfoResp implements JoyMQDTO {
     private static final int MAX_RESP_FROM_LENGTH = 64;
     private byte dataType;
     private int dataId;
     private byte respType;
     private String reqFrom;
     private String respFrom;
-
-    BaseInfoResp(DataTypeEnum dataType, int dataId, RespTypeEnum respType) {
-        this.dataType = dataType.getType();
-        this.dataId = dataId;
-        this.respType = respType.getType();
-        this.reqFrom = "";
-        this.respFrom = UtilAll.getFrom();
-    }
 
     BaseInfoResp(BaseInfoReq req, DataTypeEnum dataType, RespTypeEnum respType) {
         this.dataType = dataType.getType();
@@ -65,15 +54,5 @@ public abstract class BaseInfoResp implements JoyMQModel {
         byteBuf = byteBuf.writeShort(respFromBytes.length).writeBytes(respFromBytes);
         byteBuf = byteBuf.setShort(baseLengthWriterIndex, byteBuf.writerIndex() - baseLengthWriterIndex - Short.BYTES);
         return byteBuf;
-    }
-
-    public void writeResponse(ChannelHandlerContext ctx) {
-        Channel channel = ctx.channel();
-        if (!channel.isActive() || !channel.isWritable()) {
-            log.info("channel not active or not writable active:{} writable:{} respType:{} reqFrom:{} dataId:{}",
-                    channel.isActive(), channel.isWritable(), this.respType, this.reqFrom, this.dataId);
-            return;
-        }
-        channel.writeAndFlush(this).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     }
 }

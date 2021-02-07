@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="false">
     <!-- 设置日志输出根目录为用户主目录下的logs目录，没有会新建 -->
-    <property name="LOG_DIR" value="${user.home}/logs"/>
+    <property name="LOG_DIR" value="${user.home}/joymq/logs"/>
     <!-- 使用springboot默认配置，其中有CONSOLE_LOG_PATTERN和FILE_LOG_PATTERN的配置 -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     <!-- 增加一个jvm关闭时的hook，释放logback的线程和资源，jvm关闭时延迟3s关闭logback context -->

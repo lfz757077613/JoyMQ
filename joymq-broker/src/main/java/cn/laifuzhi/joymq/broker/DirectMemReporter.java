@@ -1,6 +1,7 @@
 package cn.laifuzhi.joymq.broker;
 
-import cn.laifuzhi.joymq.broker.config.BrokerDynamicConf;
+import cn.laifuzhi.joymq.broker.config.DynamicConfContainer;
+import cn.laifuzhi.joymq.broker.config.DynamicConfig;
 import io.netty.util.internal.PlatformDependent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,7 +23,7 @@ public class DirectMemReporter {
     private ScheduledExecutorService scheduledExecutor;
     private static final String FILED_NAME = "DIRECT_MEMORY_COUNTER";
     @Resource
-    private BrokerDynamicConf brokerConf;
+    private DynamicConfContainer dynamicConfContainer;
     private AtomicLong directMem;
 
     @PostConstruct
@@ -30,22 +31,23 @@ public class DirectMemReporter {
         log.info("DirectMemReporter init");
         Field field = ReflectionUtils.findField(PlatformDependent.class, FILED_NAME);
         Objects.requireNonNull(field).setAccessible(true);
-        this.directMem = (AtomicLong) field.get(PlatformDependent.class);
-        this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+        directMem = (AtomicLong) field.get(PlatformDependent.class);
+        scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
         report();
     }
 
     @PreDestroy
     private void destroy() throws InterruptedException {
-        this.scheduledExecutor.shutdown();
-        while (!this.scheduledExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+        scheduledExecutor.shutdown();
+        while (!scheduledExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
             log.info("DirectMemReporter await ...");
         }
         log.info("DirectMemReporter shutdown");
     }
 
     private void report() {
-        log.info("server direct memory size:{}b, max:{}", this.directMem.get(), PlatformDependent.maxDirectMemory());
-        this.scheduledExecutor.schedule(this::report, this.brokerConf.getConfigBean().getDirectMemReportPeriod(), TimeUnit.MILLISECONDS);
+        log.info("server direct memory size:{}b, max:{}", directMem.get(), PlatformDependent.maxDirectMemory());
+        DynamicConfig dynamicConfig = dynamicConfContainer.getDynamicConfig();
+        scheduledExecutor.schedule(this::report, dynamicConfig.getDirectMemReportPeriod(), TimeUnit.MILLISECONDS);
     }
 }

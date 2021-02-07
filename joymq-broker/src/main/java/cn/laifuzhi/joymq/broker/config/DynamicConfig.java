@@ -5,7 +5,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class ConfigBean {
-    private int channelIdleTimeout;
+public class DynamicConfig {
     private int directMemReportPeriod;
+    private int stringMaxLength;
+    private int msgBodyMaxBytes;
 }

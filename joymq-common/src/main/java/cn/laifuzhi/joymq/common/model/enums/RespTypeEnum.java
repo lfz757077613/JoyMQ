@@ -12,10 +12,7 @@ import java.util.Optional;
 public enum RespTypeEnum {
     OK((byte) 0, "success"),
     UNEXPECTED_ERROR((byte) -1, "unexpect error"),
-    BROKER_BUSY((byte) -2, "broker busy"),
-    DATA_TYPE_NOT_EXIST((byte) -3, "data type not exist"),
-    DATA_TYPE_NOT_SUPPORT((byte) -4, "data type not support"),
-    DECODE_ERROR((byte) -5, "decode error"),
+    PARAM_ERROR((byte) -2, "parameter error"),
     ;
     private static Map<Byte, RespTypeEnum> typeEnumMap = new HashMap<>();
 

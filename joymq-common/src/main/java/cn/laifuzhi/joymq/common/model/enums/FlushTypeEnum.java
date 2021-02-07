@@ -10,8 +10,9 @@ import java.util.Optional;
 @Getter
 @AllArgsConstructor
 public enum FlushTypeEnum {
-    SYNC((byte) 0, "sync"),
-    ASYNC((byte) 1, "async"),
+    ASYNC((byte) 0, "async"),
+    SYNC((byte) 1, "sync"),
+    HA((byte) 2, "HA"),
     ;
     private static Map<Byte, FlushTypeEnum> typeEnumMap = new HashMap<>();
 

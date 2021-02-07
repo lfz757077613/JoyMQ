@@ -2,7 +2,7 @@ package cn.laifuzhi.joymq.broker.handler;
 
 import cn.laifuzhi.joymq.common.model.Ping;
 import cn.laifuzhi.joymq.common.model.Pong;
-import com.alibaba.fastjson.JSON;
+import cn.laifuzhi.joymq.common.utils.ChannelUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -15,14 +15,8 @@ public class PingHandler extends SimpleChannelInboundHandler<Ping> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Ping ping) throws Exception {
         Channel channel = ctx.channel();
-        try {
-            if (channel.isWritable()) {
-                log.error("PingHandler not writable ping:{}", JSON.toJSONString(ping));
-                return;
-            }
-            new Pong(ping).writeResponse(ctx);
-        } catch (Exception e) {
-            log.error("PingHandler error remoteAddress:{}", channel.remoteAddress(), e);
-        }
+        // 将第一次ping请求的reqFrom设置为channel的from属性
+        ChannelUtil.setFromIfAbsent(channel, ping.getReqFrom());
+        ChannelUtil.writeResponse(ctx, new Pong(ping));
     }
 }

@@ -1,0 +1,5 @@
+{
+  "directMemReportPeriod": 10000,
+  "stringMaxLength": 128,
+  "msgBodyMaxBytes": 3145728
+}

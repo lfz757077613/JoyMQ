@@ -1,5 +1,7 @@
 package cn.laifuzhi.joymq.broker.handler;
 
+import cn.laifuzhi.joymq.common.utils.ChannelUtil;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -15,19 +17,22 @@ public class ConnectHandler extends IdleStateHandler {
 
     @Override
     protected void channelIdle(ChannelHandlerContext ctx, IdleStateEvent evt) throws Exception {
-        log.info("channelIdle remoteAddress:{}", ctx.channel().remoteAddress());
+        Channel channel = ctx.channel();
+        log.info("channelIdle remoteAddress:{} from:{}", channel.remoteAddress(), ChannelUtil.getFrom(channel));
         ctx.close();
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.info("channelActive remoteAddress:{}", ctx.channel().remoteAddress());
+        Channel channel = ctx.channel();
+        log.info("channelActive remoteAddress:{} from:{}", channel.remoteAddress(), ChannelUtil.getFrom(channel));
         super.channelActive(ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.info("channelInactive remoteAddress:{}", ctx.channel().remoteAddress());
+        Channel channel = ctx.channel();
+        log.info("channelInactive remoteAddress:{} from:{}", channel.remoteAddress(), ChannelUtil.getFrom(channel));
         super.channelInactive(ctx);
     }
 }

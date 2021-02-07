@@ -93,16 +93,17 @@ public class NettyClient {
 
     public static void main(String[] args) throws InterruptedException {
         GlobalEventExecutor eventExecutors = GlobalEventExecutor.INSTANCE;
-        Channel channel = new NettyClient().connect();
+//        Channel channel = new NettyClient().connect();
         AtomicInteger atomicInteger = new AtomicInteger();
 //        channel.writeAndFlush(new Ping("1","")).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-        byte[] bytes = StringUtils.repeat("赖", 1024).getBytes();
-        for (int i = 0; i < 500000000; i++) {
-//            TimeUnit.MILLISECONDS.sleep(10);
-//            if (!channel.isWritable()) {
-//                continue;
-//            }
-            channel.writeAndFlush(new SendMsgReq("group", "topic", FlushTypeEnum.SYNC, bytes)).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
+        byte[] bytes = StringUtils.repeat("赖", 10240).getBytes();
+        Channel channel = new NettyClient().connect();
+        for (;;) {
+//            TimeUnit.MILLISECONDS.sleep(1);
+            if (!channel.isWritable()) {
+                continue;
+            }
+            channel.writeAndFlush(new SendMsgReq("group", "topic", FlushTypeEnum.SYNC, bytes));
             System.out.println(atomicInteger.incrementAndGet());
         }
 

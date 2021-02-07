@@ -1,16 +1,16 @@
 package cn.laifuzhi.joymq.common.handler;
 
-import cn.laifuzhi.joymq.common.model.JoyMQModel;
-import cn.laifuzhi.joymq.common.model.SystemResp;
+import cn.laifuzhi.joymq.common.model.JoyMQDTO;
 import cn.laifuzhi.joymq.common.model.enums.DataTypeEnum;
-import cn.laifuzhi.joymq.common.model.enums.RespTypeEnum;
+import cn.laifuzhi.joymq.common.utils.ChannelUtil;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Constructor;
+import java.net.SocketAddress;
 import java.util.Optional;
 
 // 私有协议，前四字节是魔数，接着四个字节是数据长度，接着是一个完整数据包
@@ -20,21 +20,23 @@ public class DataDecoder extends LengthFieldBasedFrameDecoder {
     public static final int MAGIC_NUMBER = 0xdeadbeaf;
     public static final int LENGTH_FIELD_OFFSET = Integer.BYTES;
     public static final int LENGTH_FIELD_LENGTH = Integer.BYTES;
-    private static final int MAX_BYTES = 4 * 1024 * 1024;
 
-    public DataDecoder() {
-        super(MAX_BYTES, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH);
+    public DataDecoder(int maxBytes) {
+        super(maxBytes, LENGTH_FIELD_OFFSET, LENGTH_FIELD_LENGTH);
     }
 
     @Override
     protected Object decode(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
         ByteBuf byteBuf = null;
         Integer dataId = null;
+        Channel channel = ctx.channel();
+        String from = ChannelUtil.getFrom(channel);
+        SocketAddress remoteAddress = channel.remoteAddress();
         try {
             //不是魔数开头直接拒绝访问
             if (in.readableBytes() >= Integer.BYTES && in.getInt(in.readerIndex()) != MAGIC_NUMBER) {
                 log.info("magic number wrong number:{} remoteAddress:{}",
-                        Integer.toHexString(in.getInt(in.readerIndex())), ctx.channel().remoteAddress());
+                        Integer.toHexString(in.getInt(in.readerIndex())), remoteAddress);
                 ctx.close();
                 return null;
             }
@@ -48,18 +50,14 @@ public class DataDecoder extends LengthFieldBasedFrameDecoder {
             dataId = byteBuf.getInt(byteBuf.readerIndex() + Byte.BYTES);
             Optional<DataTypeEnum> dataTypeOptional = DataTypeEnum.getByType(dataType);
             if (!dataTypeOptional.isPresent()) {
-                log.error("data type not exist dataType:{} remoteAddress:{} dataId:{}", dataType, ctx.channel().remoteAddress(), dataId);
-                new SystemResp(dataId, RespTypeEnum.DATA_TYPE_NOT_EXIST).writeResponse(ctx);
+                log.error("data type not exist dataType:{} remoteAddress:{} dataId:{} from:{}", dataType, remoteAddress, from, dataId);
                 return null;
             }
-            Constructor<? extends JoyMQModel> constructor = dataTypeOptional.get().getMqModelClass().getDeclaredConstructor();
+            Constructor<? extends JoyMQDTO> constructor = dataTypeOptional.get().getMqDTOClass().getDeclaredConstructor();
             constructor.setAccessible(true);
             return constructor.newInstance().decode(byteBuf);
         } catch (Exception e) {
-            log.error("decode error remoteAddress:{} dataId:{}", ctx.channel().remoteAddress(), dataId, e);
-            if (dataId != null) {
-                new SystemResp(dataId, RespTypeEnum.DECODE_ERROR).writeResponse(ctx);
-            }
+            log.error("decode error remoteAddress:{} dataId:{} from:{}", remoteAddress, dataId, from, e);
             return null;
         } finally {
             if (byteBuf != null) {

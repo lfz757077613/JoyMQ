@@ -1,6 +1,8 @@
 package cn.laifuzhi.joymq.broker;
 
-import cn.laifuzhi.joymq.broker.config.BrokerDynamicConf;
+import cn.laifuzhi.joymq.broker.config.DynamicConfContainer;
+import cn.laifuzhi.joymq.broker.config.DynamicConfig;
+import cn.laifuzhi.joymq.broker.config.StaticConfig;
 import cn.laifuzhi.joymq.broker.handler.BrokerHandler;
 import cn.laifuzhi.joymq.broker.handler.ConnectHandler;
 import cn.laifuzhi.joymq.common.handler.DataDecoder;
@@ -20,28 +22,31 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.traffic.GlobalChannelTrafficShapingHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
 public class NettyServer {
-    @Value("${broker.port}")
-    private int brokerPort;
-    @Value("${broker.backlog}")
-    private int backlog;
+    @Resource
+    private StaticConfig staticConfig;
+    @Resource
+    private DynamicConfContainer dynamicConfContainer;
     @Resource
     private BrokerHandler brokerHandler;
-    @Resource
-    private BrokerDynamicConf brokerConf;
 
     private ServerBootstrap serverBootstrap;
+    private ScheduledExecutorService shapingHandlerScheduler;
+    private GlobalChannelTrafficShapingHandler shapingHandler;
 
     @PostConstruct
     private void init() {
@@ -56,38 +61,53 @@ public class NettyServer {
             workerEventLoopGroup = new EpollEventLoopGroup();
             channelClass = EpollServerSocketChannel.class;
         }
-        this.serverBootstrap = new ServerBootstrap().group(bossEventLoopGroup, workerEventLoopGroup)
+        shapingHandlerScheduler = Executors.newSingleThreadScheduledExecutor();
+        shapingHandler = new GlobalChannelTrafficShapingHandler(
+                shapingHandlerScheduler,
+                staticConfig.getWriteGlobalLimit(),
+                staticConfig.getReadGlobalLimit(),
+                staticConfig.getWriteChannelLimit(),
+                staticConfig.getReadChannelLimit());
+        serverBootstrap = new ServerBootstrap().group(bossEventLoopGroup, workerEventLoopGroup)
                 .channel(channelClass)
-                .localAddress(brokerPort)
-                .option(ChannelOption.SO_BACKLOG, backlog)
-                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, WriteBufferWaterMark.DEFAULT)
+                .localAddress(staticConfig.getPort())
+                .option(ChannelOption.SO_BACKLOG, staticConfig.getBacklog())
+                .childOption(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(staticConfig.getLowWaterMark(), staticConfig.getHighWaterMark()))
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
                         // 60s收不到client心跳认为连接假死(也就是收不到ping)，关闭channel
-                        p.addLast(new ConnectHandler(brokerConf.getConfigBean().getChannelIdleTimeout(), 0, 0));
-                        p.addLast(new DataDecoder());
+                        p.addLast(new ConnectHandler(staticConfig.getChannelIdleTimeout(), 0, 0));
+                        p.addLast(shapingHandler);
+                        p.addLast(new DataDecoder(staticConfig.getMaxDecodeBytes()));
                         p.addLast(DataEncoder.INSTANCE);
                         p.addLast(brokerHandler);
                     }
                 });
-        this.serverBootstrap.bind().syncUninterruptibly();
-        log.info("JoyMQ broker start on port:{}", brokerPort);
+        serverBootstrap.bind().syncUninterruptibly();
+        log.info("JoyMQ broker start on port:{}", staticConfig.getPort());
     }
 
     @PreDestroy
-    private void destroy() {
-        this.serverBootstrap.config().group().shutdownGracefully().awaitUninterruptibly();
-        this.serverBootstrap.config().childGroup().shutdownGracefully().awaitUninterruptibly();
+    private void destroy() throws InterruptedException {
+        serverBootstrap.config().group().shutdownGracefully().awaitUninterruptibly();
+        serverBootstrap.config().childGroup().shutdownGracefully().awaitUninterruptibly();
+        shapingHandler.release();
+        shapingHandlerScheduler.shutdown();
+        while (!shapingHandlerScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+            log.info("shapingHandlerScheduler await ...");
+        }
+        log.info("shapingHandlerScheduler shutdown");
         log.info("JoyMQ broker shutdown");
     }
 
     private void systemCheck() {
+        DynamicConfig dynamicConfig = dynamicConfContainer.getDynamicConfig();
         Preconditions.checkArgument(
                 UtilAll.getInnerIp() != null
                         && UtilAll.getPid() > 0
-                        && StringUtils.length(UtilAll.getFrom()) <= 64
+                        && StringUtils.length(UtilAll.getFrom()) <= dynamicConfig.getStringMaxLength()
         );
     }
 }

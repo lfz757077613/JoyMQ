@@ -27,7 +27,7 @@
             <outputDirectory>/</outputDirectory>
             <includes>
                 <!-- 复制配置文件 -->
-                <include>broker.conf</include>
+                <include>dynamicConf.json</include>
             </includes>
         </fileSet>
 

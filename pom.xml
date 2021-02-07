@@ -28,6 +28,7 @@
         <java.version>1.8</java.version>
 
         <!-- springboot中没定义的依赖版本 start -->
+        <commons-io.version>2.8.0</commons-io.version>
         <commons-collections4.version>4.4</commons-collections4.version>
         <guava.version>30.1-jre</guava.version>
         <fastjson.version>1.2.75</fastjson.version>
@@ -41,6 +42,11 @@
     <!-- springboot中没定义的第三方依赖jar -->
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>commons-io</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${commons-io.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-collections4</artifactId>

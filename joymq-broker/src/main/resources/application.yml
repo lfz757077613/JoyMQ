@@ -5,6 +5,25 @@ spring:
 # 自定义配置
 broker:
   port: 6792
-  backlog: 1024
-  confFilename: broker.conf
+  backlog: 2048
+  maxDecodeBytes: 4194304
+  dynamicConfFilename: dynamicConf.json
   confReloadPeriod: 60000
+  channelIdleTimeout: 60000
+  lowWaterMark: 524288
+  highWaterMark: 1048576
+#  writeGlobalLimit: 0
+#  readGlobalLimit: 104857600
+#  writeChannelLimit: 0
+#  readChannelLimit: 1048576
+  writeGlobalLimit: 0
+  readGlobalLimit: 0
+  writeChannelLimit: 0
+  readChannelLimit: 0
+#  brokerHandlerThreads: 200
+#  brokerHandlerQueueSize: 10240
+  brokerHandlerThreads: 1
+  brokerHandlerQueueSize: 10
+  msgLogStoreDirInHome: store/msg/
+  brokerRunningFile: store/running.tmp
+  broker: store/running.tmp

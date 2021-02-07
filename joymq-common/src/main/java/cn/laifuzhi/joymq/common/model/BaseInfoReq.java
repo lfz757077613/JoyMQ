@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
-public abstract class BaseInfoReq implements JoyMQModel{
+public abstract class BaseInfoReq implements JoyMQDTO {
     private static final AtomicInteger ID_GENERATOR = new AtomicInteger();
     private static final int MAX_GROUP_LENGTH = 64;
     private byte dataType;
@@ -35,8 +35,7 @@ public abstract class BaseInfoReq implements JoyMQModel{
         this.dataType = byteBuf.readByte();
         this.dataId = byteBuf.readInt();
         byteBuf = byteBuf.readSlice(byteBuf.readShort());
-        short reqFromLength = byteBuf.readShort();
-        this.reqFrom = byteBuf.readCharSequence(reqFromLength, StandardCharsets.UTF_8).toString();
+        this.reqFrom = byteBuf.readCharSequence(byteBuf.readShort(), StandardCharsets.UTF_8).toString();
         this.group = byteBuf.readCharSequence(byteBuf.readShort(), StandardCharsets.UTF_8).toString();
         return this;
     }

@@ -1,10 +1,9 @@
 package cn.laifuzhi.joymq.broker.handler;
 
-import cn.laifuzhi.joymq.broker.config.BrokerDynamicConf;
+import cn.laifuzhi.joymq.broker.config.StaticConfig;
 import cn.laifuzhi.joymq.common.model.BaseInfoReq;
-import cn.laifuzhi.joymq.common.model.SystemResp;
 import cn.laifuzhi.joymq.common.model.enums.DataTypeEnum;
-import cn.laifuzhi.joymq.common.model.enums.RespTypeEnum;
+import cn.laifuzhi.joymq.common.utils.ChannelUtil;
 import com.google.common.collect.Maps;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -28,70 +27,73 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class BrokerHandler extends SimpleChannelInboundHandler<BaseInfoReq> {
     @Resource
-    private BrokerDynamicConf brokerConf;
+    private StaticConfig staticConfig;
     @Resource
     private Map<String, SimpleChannelInboundHandler<? extends BaseInfoReq>> handlerMap;
 
     private ThreadPoolExecutor executor;
-    private Map<DataTypeEnum, String> Msg2HandlerMap;
+    private Map<DataTypeEnum, String> Req2HandlerMap;
 
     @PostConstruct
     private void init() {
-        this.executor = new ThreadPoolExecutor(
-                200,
-                200,
+        executor = new ThreadPoolExecutor(
+                staticConfig.getBrokerHandlerThreads(),
+                staticConfig.getBrokerHandlerThreads(),
                 0,
                 TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<>(1000000),
+                new LinkedBlockingQueue<>(staticConfig.getBrokerHandlerQueueSize()),
                 new CustomizableThreadFactory("BrokerHandler")
         );
-        this.Msg2HandlerMap = Maps.newHashMap();
-        this.Msg2HandlerMap.put(DataTypeEnum.PING, PingHandler.class.getSimpleName());
-        this.Msg2HandlerMap.put(DataTypeEnum.SEND_MSG_REQ, SendMsgHandler.class.getSimpleName());
+        Req2HandlerMap = Maps.newHashMap();
+        Req2HandlerMap.put(DataTypeEnum.PING, PingHandler.class.getSimpleName());
+        Req2HandlerMap.put(DataTypeEnum.SEND_MSG_REQ, SendMsgHandler.class.getSimpleName());
     }
 
     @PreDestroy
     private void destroy() throws InterruptedException {
-        this.executor.shutdown();
-        while (!this.executor.awaitTermination(5, TimeUnit.SECONDS)) {
+        executor.shutdown();
+        while (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
             log.info("BrokerHandler await ...");
         }
         log.info("BrokerHandler shutdown");
     }
 
     private SimpleChannelInboundHandler<? extends BaseInfoReq> getHandlerByMsgEnum(DataTypeEnum dataTypeEnum) {
-        String handlerSimpleName = this.Msg2HandlerMap.get(dataTypeEnum);
+        String handlerSimpleName = Req2HandlerMap.get(dataTypeEnum);
         if (StringUtils.isBlank(handlerSimpleName)) {
             return null;
         }
-        return this.handlerMap.get(handlerSimpleName);
+        return handlerMap.get(handlerSimpleName);
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, BaseInfoReq req) throws Exception {
         try {
-            this.executor.submit(() -> {
-                try {
-                    SimpleChannelInboundHandler<? extends BaseInfoReq> handler = getHandlerByMsgEnum(req.dataType());
-                    if (handler == null) {
-                        log.error("broker not support dataType:{} reqFrom:{}", req.dataType(), req.getReqFrom());
-                        new SystemResp(req.getDataId(), RespTypeEnum.DATA_TYPE_NOT_SUPPORT).writeResponse(ctx);
-                        return;
-                    }
-                    handler.channelRead(ctx, req);
-                } catch (Exception e) {
-                    ctx.fireExceptionCaught(e);
-                }
-            });
+            executor.submit(() -> runHandler(ctx, req));
         } catch (RejectedExecutionException e) {
-            log.error("broker busy reqFrom:{} dataId:{}", req.getReqFrom(), req.getDataId());
-            new SystemResp(req.getDataId(), RespTypeEnum.BROKER_BUSY).writeResponse(ctx);
+            log.info("broker busy run in netty thread directly reqFrom:{} dataId:{}", req.getReqFrom(), req.getDataId());
+            runHandler(ctx, req);
         }
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.error("exceptionCaught remoteAddress:{}", ctx.channel().remoteAddress(), cause);
+        log.error("exceptionCaught remoteAddress:{} from:{}",
+                ctx.channel().remoteAddress(), ChannelUtil.getFrom(ctx.channel()), cause);
         ctx.close();
+    }
+
+    private void runHandler(ChannelHandlerContext ctx, BaseInfoReq req) {
+        try {
+            SimpleChannelInboundHandler<? extends BaseInfoReq> handler = getHandlerByMsgEnum(req.dataType());
+            if (handler == null) {
+                log.error("broker not support dataType:{} reqFrom:{}", req.dataType(), req.getReqFrom());
+                return;
+            }
+            handler.channelRead(ctx, req);
+        } catch (Exception e) {
+            // 应该不会执行到这里
+            ctx.fireExceptionCaught(e);
+        }
     }
 }
