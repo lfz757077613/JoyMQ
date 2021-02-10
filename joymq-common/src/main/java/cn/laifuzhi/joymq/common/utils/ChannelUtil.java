@@ -20,13 +20,13 @@ public class ChannelUtil {
     }
 
     /**
-     * addListener时可能eventloop已经关闭了，所以会打异常堆栈
+     * addListener时可能eventloop已经关闭了，所以netty会打异常堆栈
      */
     public static void writeResponse(ChannelHandlerContext ctx, BaseInfoResp resp) {
         Channel channel = ctx.channel();
-        if (!channel.isActive() || !channel.isWritable()) {
-            log.info("channel not active or not writable active:{} writable:{} respType:{} reqFrom:{} dataId:{} remoteAddress:{}",
-                    channel.isActive(), channel.isWritable(), resp.getRespType(), resp.getReqFrom(), resp.getDataId(), channel.remoteAddress());
+        if (!channel.isActive()) {
+            log.info("channel not active respType:{} reqFrom:{} dataId:{} remoteAddress:{}",
+                    resp.getRespType(), resp.getReqFrom(), resp.getDataId(), channel.remoteAddress());
             return;
         }
         channel.writeAndFlush(resp).addListener((ChannelFutureListener) future -> {

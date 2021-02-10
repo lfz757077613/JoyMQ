@@ -22,7 +22,6 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.traffic.GlobalChannelTrafficShapingHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -30,9 +29,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.annotation.Resource;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -45,8 +41,6 @@ public class NettyServer {
     private BrokerHandler brokerHandler;
 
     private ServerBootstrap serverBootstrap;
-    private ScheduledExecutorService shapingHandlerScheduler;
-    private GlobalChannelTrafficShapingHandler shapingHandler;
 
     @PostConstruct
     private void init() {
@@ -61,13 +55,7 @@ public class NettyServer {
             workerEventLoopGroup = new EpollEventLoopGroup();
             channelClass = EpollServerSocketChannel.class;
         }
-        shapingHandlerScheduler = Executors.newSingleThreadScheduledExecutor();
-        shapingHandler = new GlobalChannelTrafficShapingHandler(
-                shapingHandlerScheduler,
-                staticConfig.getWriteGlobalLimit(),
-                staticConfig.getReadGlobalLimit(),
-                staticConfig.getWriteChannelLimit(),
-                staticConfig.getReadChannelLimit());
+
         serverBootstrap = new ServerBootstrap().group(bossEventLoopGroup, workerEventLoopGroup)
                 .channel(channelClass)
                 .localAddress(staticConfig.getPort())
@@ -79,7 +67,6 @@ public class NettyServer {
                         ChannelPipeline p = ch.pipeline();
                         // 60s收不到client心跳认为连接假死(也就是收不到ping)，关闭channel
                         p.addLast(new ConnectHandler(staticConfig.getChannelIdleTimeout(), 0, 0));
-                        p.addLast(shapingHandler);
                         p.addLast(new DataDecoder(staticConfig.getMaxDecodeBytes()));
                         p.addLast(DataEncoder.INSTANCE);
                         p.addLast(brokerHandler);
@@ -90,15 +77,9 @@ public class NettyServer {
     }
 
     @PreDestroy
-    private void destroy() throws InterruptedException {
+    private void destroy() {
         serverBootstrap.config().group().shutdownGracefully().awaitUninterruptibly();
         serverBootstrap.config().childGroup().shutdownGracefully().awaitUninterruptibly();
-        shapingHandler.release();
-        shapingHandlerScheduler.shutdown();
-        while (!shapingHandlerScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-            log.info("shapingHandlerScheduler await ...");
-        }
-        log.info("shapingHandlerScheduler shutdown");
         log.info("JoyMQ broker shutdown");
     }
 

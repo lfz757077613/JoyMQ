@@ -142,52 +142,6 @@ public class Crc32 implements Checksum {
         crc = localCrc;
     }
 
-    public void update(ByteBuf byteBuf) {
-        int localCrc = crc;
-        int readerIndex = byteBuf.readerIndex();
-        int length = byteBuf.readableBytes();
-        while (length > 7) {
-            final int c0 = (byteBuf.getByte(readerIndex + 0) ^ localCrc) & 0xff;
-            final int c1 = (byteBuf.getByte(readerIndex + 1) ^ (localCrc >>>= 8)) & 0xff;
-            final int c2 = (byteBuf.getByte(readerIndex + 2) ^ (localCrc >>>= 8)) & 0xff;
-            final int c3 = (byteBuf.getByte(readerIndex + 3) ^ (localCrc >>>= 8)) & 0xff;
-            localCrc = (T[T8_7_START + c0] ^ T[T8_6_START + c1]) ^ (T[T8_5_START + c2] ^ T[T8_4_START + c3]);
-
-            final int c4 = byteBuf.getByte(readerIndex + 4) & 0xff;
-            final int c5 = byteBuf.getByte(readerIndex + 5) & 0xff;
-            final int c6 = byteBuf.getByte(readerIndex + 6) & 0xff;
-            final int c7 = byteBuf.getByte(readerIndex + 7) & 0xff;
-
-            localCrc ^= (T[T8_3_START + c4] ^ T[T8_2_START + c5]) ^ (T[T8_1_START + c6] ^ T[T8_0_START + c7]);
-
-            readerIndex += 8;
-            length -= 8;
-        }
-
-        /* loop unroll - duff's device style */
-        switch (length) {
-            case 7:
-                localCrc = (localCrc >>> 8) ^ T[T8_0_START + ((localCrc ^ byteBuf.getByte(readerIndex++)) & 0xff)];
-            case 6:
-                localCrc = (localCrc >>> 8) ^ T[T8_0_START + ((localCrc ^ byteBuf.getByte(readerIndex++)) & 0xff)];
-            case 5:
-                localCrc = (localCrc >>> 8) ^ T[T8_0_START + ((localCrc ^ byteBuf.getByte(readerIndex++)) & 0xff)];
-            case 4:
-                localCrc = (localCrc >>> 8) ^ T[T8_0_START + ((localCrc ^byteBuf.getByte(readerIndex++)) & 0xff)];
-            case 3:
-                localCrc = (localCrc >>> 8) ^ T[T8_0_START + ((localCrc ^ byteBuf.getByte(readerIndex++)) & 0xff)];
-            case 2:
-                localCrc = (localCrc >>> 8) ^ T[T8_0_START + ((localCrc ^ byteBuf.getByte(readerIndex++)) & 0xff)];
-            case 1:
-                localCrc = (localCrc >>> 8) ^ T[T8_0_START + ((localCrc ^ byteBuf.getByte(readerIndex++)) & 0xff)];
-            default:
-                /* nothing */
-        }
-
-        // Publish crc out to object
-        crc = localCrc;
-    }
-
     @Override
     final public void update(int b) {
         crc = (crc >>> 8) ^ T[T8_0_START + ((crc ^ b) & 0xff)];

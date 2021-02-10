@@ -4,13 +4,15 @@ import cn.laifuzhi.joymq.common.model.Ping;
 import cn.laifuzhi.joymq.common.model.Pong;
 import cn.laifuzhi.joymq.common.utils.ChannelUtil;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component("PingHandler")
+@Sharable
+@Component(HandlerNames.PING_HANDLER)
 public class PingHandler extends SimpleChannelInboundHandler<Ping> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Ping ping) throws Exception {

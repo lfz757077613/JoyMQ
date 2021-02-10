@@ -35,4 +35,13 @@ public class ConnectHandler extends IdleStateHandler {
         log.info("channelInactive remoteAddress:{} from:{}", channel.remoteAddress(), ChannelUtil.getFrom(channel));
         super.channelInactive(ctx);
     }
+
+    // channel不可写时关闭自动读取
+    @Override
+    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
+        Channel channel = ctx.channel();
+        log.info("channelWritabilityChanged remoteAddress:{} from:{} writable:{}", channel.remoteAddress(), ChannelUtil.getFrom(channel), channel.isWritable());
+        ctx.channel().config().setAutoRead(ctx.channel().isWritable());
+        super.channelWritabilityChanged(ctx);
+    }
 }

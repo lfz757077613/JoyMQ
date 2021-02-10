@@ -1,12 +1,10 @@
 package cn.laifuzhi.joymq.broker.store;
 
-import io.netty.buffer.ByteBuf;
+import cn.laifuzhi.joymq.common.model.SendMsgReq;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.nio.ByteBuffer;
 
 @Getter
 @Setter
@@ -15,9 +13,10 @@ public class MsgPO {
     private String topic;
     private long storeTime;
     private long crc32;
-    private ByteBuf body;
+    private byte[] body;
 
-    public static MsgPO decode(ByteBuffer byteBuffer) {
-        return new MsgPO();
+    public MsgPO(SendMsgReq sendMsgReq) {
+
     }
+
 }

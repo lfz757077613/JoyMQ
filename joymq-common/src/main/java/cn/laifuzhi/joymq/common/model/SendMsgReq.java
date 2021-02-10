@@ -17,10 +17,7 @@ public class SendMsgReq extends BaseInfoReq {
     private static final int MAX_BODY_LENGTH = 3 * 1024 * 1024;
     private String topic;
     private byte flushType;
-    private ByteBuf body;
-
-    // decode时保留原始ByteBuf的引用
-    private ByteBuf origin;
+    private byte[] body;
 
     public SendMsgReq(String group, String topic, FlushTypeEnum flushType, byte[] body) {
         super(DataTypeEnum.SEND_MSG_REQ, group);
@@ -30,7 +27,7 @@ public class SendMsgReq extends BaseInfoReq {
         }
         this.topic = topic;
         this.flushType = flushType.getType();
-        this.body = Unpooled.wrappedBuffer(body);
+        this.body = body;
     }
 
     @Override
@@ -39,8 +36,7 @@ public class SendMsgReq extends BaseInfoReq {
         short topicLength = byteBuf.readShort();
         this.topic = byteBuf.readCharSequence(topicLength, StandardCharsets.UTF_8).toString();
         this.flushType = byteBuf.readByte();
-        this.body = byteBuf.readSlice(byteBuf.readInt());
-        this.origin = byteBuf.resetReaderIndex().retain();
+        byteBuf.readBytes(this.body);
         return this;
     }
 
@@ -50,7 +46,7 @@ public class SendMsgReq extends BaseInfoReq {
         byte[] topicBytes = this.topic.getBytes(StandardCharsets.UTF_8);
         byteBuf = byteBuf.writeShort(topicBytes.length).writeBytes(topicBytes);
         byteBuf = byteBuf.writeByte(this.flushType);
-        byteBuf = byteBuf.writeInt(this.body.readableBytes()).writeBytes(this.body);
+        byteBuf = byteBuf.writeInt(this.body.length).writeBytes(this.body);
         return byteBuf;
     }
 

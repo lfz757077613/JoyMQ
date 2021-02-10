@@ -7,6 +7,8 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.DefaultEventLoopGroup;
+import io.netty.channel.MultithreadEventLoopGroup;
 import io.netty.util.internal.PlatformDependent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -39,6 +41,7 @@ public class MsgService {
     private ReentrantLock lock = new ReentrantLock();
     private File runningFile;
     private CopyOnWriteArrayList<MsgFile> msgFileList;
+
     @PostConstruct
     private void init() throws IOException {
         File msgFileDir = new File(SystemUtils.USER_HOME + File.separator + staticConfig.getMsgLogStoreDirInHome());
@@ -112,30 +115,11 @@ public class MsgService {
         byte[] bytes1 = StringUtils.repeat("赖", 512).getBytes();
         ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.ioBuffer(bytes.length);
         byteBuf.writeBytes(bytes);
-        for (int i = 0; i < 100000; i++) {
-            byteBuf.writeBytes(fileChannel, byteBuf.readableBytes());
-            fileChannel.force(false);
-            byteBuf.resetReaderIndex();
-        }
-        ByteBuffer wrap = ByteBuffer.wrap(bytes);
-        ByteBuffer wrap1 = ByteBuffer.wrap(bytes1);
-        for (int i = 0; i < 100000; i++) {
-            fileChannel.write(wrap);
-            fileChannel.force(false);
-            wrap.clear();
-        }
-        long start = System.currentTimeMillis();
-        for (int i = 0; i < 100000; i++) {
-            ByteBuffer byteBuffer = byteBuf.nioBuffer();
-        }
-        System.out.println(System.currentTimeMillis() - start);
-        start = System.currentTimeMillis();
-        for (int i = 0; i < 100000; i++) {
-            fileChannel.write(wrap);
-            fileChannel.force(false);
-            wrap.clear();
-        }
-        System.out.println(System.currentTimeMillis() - start);
+        ByteBuf slice = byteBuf.slice();
+        ByteBuf unwrap = slice.unwrap();
+        unwrap.writeBytes("123".getBytes());
+        System.out.println();
+
     }
 
     public boolean writeMsg(SendMsgReq sendMsgReq) {
